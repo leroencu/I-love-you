@@ -27,13 +27,13 @@
         .small-text {
             position: absolute;
             color: #ff1a1a;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: bold;
             white-space: nowrap;
-            opacity: 0; /* Изначально невидимы */
+            opacity: 0;
             transform: translate(-50%, -50%);
             text-shadow: 0 0 8px rgba(255, 0, 0, 0.9);
-            transition: opacity 0.15s ease-in-out; /* Быстрое появление/исчезновение */
+            transition: opacity 0.5s ease-in-out; /* Плавное появление */
         }
         /* Большая белая надпись по центру */
         .center-text {
@@ -60,16 +60,17 @@
     <script>
         const container = document.getElementById('canvas-container');
         const centerTextEl = document.getElementById('center-text');
-        // 1. Создаем все элементы по контуру сердца (но пока невидимые)
-        const totalPoints = 140; // Количество надписей
+        // Количество надписей по контуру сердца
+        const totalPoints = 200; 
         const width = window.innerWidth;
         const height = window.innerHeight;
         const centerX = width / 2;
         const centerY = height / 2;
         const scale = Math.min(width, height) / 25;
-        const elements = []; // Массив для хранения ссылок на элементы
+        const elements = []; // Массив для хранения всех надписей
+        // 1. Создаем МНОГО надписей по контуру сердца
         for (let i = 0; i < totalPoints; i++) {
-            let t = (i / totalPoints) * Math.PI * 2;
+            let t = (i / totalPoints) * Math.PI * 2;            
             // Формула сердца
             let x = 16 * Math.pow(Math.sin(t), 3);
             let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
@@ -77,49 +78,28 @@
             let posY = centerY - y * scale;
             const span = document.createElement('span');
             span.className = 'small-text';
-            span.innerText = 'I love you';           
-            // Небольшое случайное смещение для "живого" эффекта
-            let randomOffsetX = (Math.random() - 0.5) * 30;
-            let randomOffsetY = (Math.random() - 0.5) * 30;
+            span.innerText = 'I love you';            
+            // Случайное смещение, чтобы надписи были похожи на живой рой
+            let randomOffsetX = (Math.random() - 0.5) * 35;
+            let randomOffsetY = (Math.random() - 0.5) * 35;
             span.style.left = (posX + randomOffsetX) + 'px';
             span.style.top = (posY + randomOffsetY) + 'px';
             container.appendChild(span);
             elements.push(span);
         }
-        // 2. Анимация быстрой смены строк в течение 15 секунд
-        let currentIndex = 0;
-        const duration = 15000; // 15 секунд
-        const startTime = Date.now();
-        const interval = setInterval(() => {
-            // Время вышло? Останавливаем анимацию и фиксируем все
-            if (Date.now() - startTime >= duration) {
-                clearInterval(interval);                
-                // Оставляем все надписи видимыми (фиксируем)
-                elements.forEach(el => {
-                    el.style.opacity = '1';
-                    el.style.transition = 'none'; // Отключаем transition, чтобы они просто горели
-                });
-                // Показываем большую надпись по центру
-                setTimeout(() => {
-                    centerTextEl.style.opacity = '1';
-                }, 100);
-                return;
-            }
-            // Скрываем предыдущую надпись
-            if (currentIndex > 0) {
-                elements[currentIndex - 1].style.opacity = '0';
-            } else if (currentIndex === 0) {
-                // На случай если это первый круг, скрываем последний элемент
-                elements[elements.length - 1].style.opacity = '0';
-            }
-            // Показываем текущую надпись
-            elements[currentIndex].style.opacity = '1';
-            // Переходим к следующей
-            currentIndex++;
-            if (currentIndex >= elements.length) {
-                currentIndex = 0;
-            }
-        }, 70); // Задержка между сменой строк (70 мс = очень быстро)
+        // 2. Все надписи загораются одна за другой и остаются гореть
+        elements.forEach((el, index) => {
+            // Задержка для каждой надписи, чтобы они появлялись волной, но не слишком долго
+            // 200 надписей * 50мс = 10 секунд на полное появление. 
+            // К 15 секунде все точно будут гореть.
+            setTimeout(() => {
+                el.style.opacity = '1';
+            }, index * 50); 
+        });
+        // 3. Через 15 секунд показываем большую надпись по центру
+        setTimeout(() => {
+            centerTextEl.style.opacity = '1';
+        }, 15000);
     </script>
 </body>
 </html>
