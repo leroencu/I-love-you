@@ -22,6 +22,7 @@
             position: relative;
             width: 100%;
             height: 100%;
+            filter: blur(0.4px);
         }
         .small-text {
             position: absolute;
@@ -31,23 +32,23 @@
             white-space: nowrap;
             opacity: 0;
             transform: translate(-50%, -50%);
-            text-shadow: 0 0 6px rgba(255, 0, 0, 0.9);
-            transition: opacity 0.6s ease-in-out;
+            text-shadow: 0 0 5px rgba(255, 0, 0, 0.8), 0 0 10px rgba(255, 0, 0, 0.4);
+            transition: opacity 0.8s ease-in-out;
         }
+        /* Белая надпись, которая будет в ЦЕНТРЕ СЕРДЦА, а не экрана */
         .center-text {
             position: absolute;
-            top: 50%;
-            left: 50%;
+            /* Координаты left и top будут установлены через JS */
             transform: translate(-50%, -50%);
-            font-size: 65px;
+            font-size: 70px;
             font-weight: 900;
             color: #ffffff;
             opacity: 0;
             text-align: center;
             white-space: nowrap;
             z-index: 100;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.9);
-            transition: opacity 1s ease-in-out;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+            transition: opacity 1.5s ease-in-out;
         }
     </style>
 </head>
@@ -62,47 +63,58 @@
         const height = window.innerHeight;
         const centerX = width / 2;
         const centerY = height / 2;
-        const scale = Math.min(width, height) / 26;
+        const scale = Math.min(width, height) / 22;
         const elements = [];
-        // Функция проверки, находится ли точка внутри сердца
-        function isInsideHeart(x, y) {
-            // Нормализуем координаты (приводим к системе формулы сердца)
-            let nx = (x - centerX) / scale;
-            let ny = -(y - centerY) / scale; // Инвертируем Y
-            // Формула сердца: (x^2 + y^2 - 1)^3 - x^2 * y^3 <= 0
-            let a = nx * nx + ny * ny - 1;
-            let formula = a * a * a - nx * nx * ny * ny * ny;
-            return formula <= 0;
-        }
-        // Заполняем всё пространство сердца надписями
-        // Проходим по всей площади экрана с шагом, проверяем — внутри ли сердца
-        const step = 18; // Чем меньше шаг, тем плотнее надписи
-        for (let y = 0; y < height; y += step) {
-            for (let x = 0; x < width; x += step) {
-                // Небольшое случайное смещение, чтобы сетка не была идеально ровной
-                let px = x + (Math.random() - 0.5) * step;
-                let py = y + (Math.random() - 0.5) * step;
-                if (isInsideHeart(px, py)) {
-                    const span = document.createElement('span');
-                    span.className = 'small-text';
-                    span.innerText = 'I love you';
-                    span.style.left = px + 'px';
-                    span.style.top = py + 'px';                    
-                    // Небольшая случайная задержка, чтобы они появлялись волной
-                    const delay = Math.random() * 1.5;
-                    span.style.transitionDelay = delay + 's';
-                    container.appendChild(span);
-                    elements.push(span);
-                }
+        // Точки контура
+        const totalPoints = 250;
+        const copiesPerPoint = 2;
+        // Переменные для вычисления визуального центра сердца
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+        for (let i = 0; i < totalPoints; i++) {
+            let t = (i / totalPoints) * Math.PI * 2;           
+            let x = 16 * Math.pow(Math.sin(t), 3);
+            let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            let baseX = centerX + x * scale;
+            let baseY = centerY - y * scale;
+            // Отслеживаем крайние точки сердца, чтобы найти его визуальный центр
+            if (baseX < minX) minX = baseX;
+            if (baseX > maxX) maxX = baseX;
+            if (baseY < minY) minY = baseY;
+            if (baseY > maxY) maxY = baseY;
+            for (let j = 0; j < copiesPerPoint; j++) {
+                let offsetAlong = (j - copiesPerPoint / 2) * 8; 
+                let randomOffsetX = (Math.random() - 0.5) * 12;
+                let randomOffsetY = (Math.random() - 0.5) * 12;
+                let posX = baseX + offsetAlong + randomOffsetX;
+                let posY = baseY + randomOffsetY;
+                const span = document.createElement('span');
+                span.className = 'small-text';
+                span.innerText = 'I love you';
+                span.style.left = posX + 'px';
+                span.style.top = posY + 'px';
+                const delay = Math.random() * 1.2;
+                span.style.transitionDelay = delay + 's';
+                container.appendChild(span);
+                elements.push(span);
             }
         }
-        // Все надписи загораются
+        // Вычисляем центр сердца
+        // По X он совпадает с центром экрана
+        // По Y — это середина между верхней и нижней точкой сердца
+        const heartCenterX = (minX + maxX) / 2;
+        const heartCenterY = (minY + maxY) / 2;
+        // Устанавливаем координаты для белой надписи ИМЕННО В ЦЕНТР СЕРДЦА
+        centerTextEl.style.left = heartCenterX + 'px';
+        // Немного опускаем вниз, так как верхняя часть сердца "пустее", а визуально центр ниже
+        centerTextEl.style.top = (heartCenterY + 15) + 'px';
+        // Запускаем появление всех красных надписей
         setTimeout(() => {
             elements.forEach(el => {
                 el.style.opacity = '1';
             });
-        }, 200);
-        // Через 15 секунд появляется большая белая надпись по центру
+        }, 100);
+        // Через 15 секунд появляется большая белая надпись в центре сердца
         setTimeout(() => {
             centerTextEl.style.opacity = '1';
         }, 15000);
